@@ -3,10 +3,12 @@ pragma solidity ^0.8.19;
 import {Test,console} from "forge-std/Test.sol";
 import {EnglishAuction} from "../../src/EnglishAuction.sol";
 import {MyNft} from "../../src/MyNft.sol";
+import {MockContract} from "../Mock/mockContract.sol";
 
 contract EnglishAuctionTest is Test {
     EnglishAuction auction;
     MyNft nft;
+    MockContract mockContract;
     address seller = makeAddr("owner");
     address bidder1 = makeAddr("bidder1");
     address bidder2 = makeAddr("bidder2");
@@ -21,6 +23,7 @@ contract EnglishAuctionTest is Test {
 
         // deploying the AUction contract
         auction = new EnglishAuction(seller , address(nft), nft_id, startingPrice, startDuration);
+        mockContract = new MockContract();
     }
 
     /////////////////////////////
@@ -207,9 +210,50 @@ contract EnglishAuctionTest is Test {
         vm.stopPrank();
     }
 
-    function testWithdrawlWithInvalidAddress() public createAuction {
-        vm.startPrank(bidder1);
+    function testWithdrawlWithInvalidAddress() public createAuction bidInAuction endAuction {
+        vm.startPrank(address(0));
+        vm.expectRevert(abi.encodeWithSelector(EnglishAuction.EnglishAuction__InvalidAddress.selector));
+        auction.withdraw();
+        vm.stopPrank();
+    }
+
+    function testWithdrwEvent() public createAuction bidInAuction endAuction  {
+        vm.startPrank(bidder2);
+        vm.expectEmit(true, false, false, true ,address(auction));
+        emit EnglishAuction.WithdrawlSuccessful(bidder2 , 2 ether);
+        auction.withdraw();
+        vm.stopPrank();
+    }
+
+    function testWithdrawlTransferError() public createAuction  {
+        vm.warp(200);
+        vm.deal(bidder1  , 1 ether);
+        vm.prank(bidder1);
+        auction.bid{value : 1 ether}();
+
+        vm.deal(address(mockContract) , 2 ether);
+        vm.prank(address(mockContract));
+        auction.bid{value : 2 ether}();
+
+        vm.deal(bidder1  , 3 ether);
+        vm.prank(bidder1);
+        auction.bid{value : 3 ether}();
+
+        // endding the auction
+        vm.startPrank(seller);
         
+        uint256 nftId = auction.i_nftId();
+        // approving the winner to tranfer the NFT
+        // for that transfering the nft to the seller and then approve
+        nft.transfer(seller);
+        nft.approve(address(auction), nftId);
+        auction.end();
+        vm.stopPrank();
+
+        // transfer the token back to Mock contract address which will revert.
+        vm.startPrank(address(mockContract));
+        vm.expectRevert(abi.encodeWithSelector(EnglishAuction.EnglishAuction__transferFailedToBidder.selector));
+        auction.withdraw();
         vm.stopPrank();
     }
 }

@@ -126,6 +126,7 @@ contract EnglishAuction {
         if (msg.sender == address(0)) {
             revert EnglishAuction__InvalidAddress();
         }
+        
         uint256 userBalance = s_trackUser[msg.sender];
         delete s_trackUser[msg.sender];
         (bool success,) = payable(msg.sender).call{value: userBalance}("");
@@ -154,7 +155,7 @@ contract EnglishAuction {
         s_ended = true;
         uint256 sellerClaimed = s_highestBid;
         address winner = s_highestBider;
-        delete s_trackUser[s_highestBider];
+        s_trackUser[s_highestBider] -= s_highestBid;
 
         s_highestBider = address(0);
         s_highestBid = 0;
