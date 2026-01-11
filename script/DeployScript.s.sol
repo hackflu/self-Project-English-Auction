@@ -9,7 +9,7 @@ contract DeployScript is Script{
     MyNft nft;
     EnglishAuction auction;
     
-    function run(address _seller, uint256 _startingPrice, uint256 _startDuration) public returns(address , address){
+    function run(address _seller, uint256 _startingPrice, uint256 _startDuration) public returns(MyNft , EnglishAuction){
         vm.startBroadcast();
         // Deploye the nft
         nft = new MyNft();
@@ -20,6 +20,6 @@ contract DeployScript is Script{
         // Deploying the Auction contract
         auction = new EnglishAuction(_seller , address(nft), id,_startingPrice, _startDuration);
         vm.stopBroadcast();
-        return (address(nft) , address(auction));
+        return (nft , auction);
     }
 }

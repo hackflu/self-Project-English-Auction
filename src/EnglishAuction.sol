@@ -32,7 +32,7 @@ contract EnglishAuction {
     address public immutable i_nftAddr;
     uint256 public immutable i_nftId;
     uint256 public immutable i_startingPrice;
-    uint256 private immutable i_startTime;
+    uint256 public immutable i_startTime;
     mapping(address => uint256) private s_trackUser;
     mapping(address => bool) private s_userExist;
     bool public s_started;
